@@ -103,22 +103,23 @@ pytest -v
 * обработки ошибок.
 
 ## Структура проекта
-
+```
 LAB 1/
-─ src/
-    ─ toolkit/
-        ─ __init__.py
-        ─ __main__.py
-        ─ main.py
-        ─ calculator.py
-        ─ converter.py
-        ─ constants.py
-
-─ tests/
-    ─ __init__.py
-    ─ test_calc.py
-    ─ test_convert.py
-    ─ test_main.py
-
-─ .gitignore
-─ README.md
+├── src/
+│   └── toolkit/
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── main.py
+│       ├── calculator.py
+│       ├── converter.py
+│       └── constants.py
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_calc.py
+│   ├── test_convert.py
+│   └── test_main.py
+│
+├── .gitignore
+└── README.md
+```
