@@ -82,7 +82,7 @@ def main() -> None:
             result = convert(value, args.from_unit, args.to_unit)
             print(result)
     except ValueError as error:
-        print(error, file = sys.stderr)
+        print(error, file = sys.stderr) # ПОЗВОЛЯЕТ ПРИНУДИТЕЛЬНО ВЫВЕСТИ ФУНКЦИЮ В ПОТОК ОШИБОК ( print - обычный поток, stderr позволяет вывести как ошибку)
         sys.exit(2)
 if __name__ == "__main__":
     main()

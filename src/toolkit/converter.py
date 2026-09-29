@@ -1,4 +1,4 @@
-from .constants import LENGTH_FACTORS, MASS_FACTORS, ABSOLUTE_ZERO
+from .constants import LENGTH_CONSTS, MASS_CONSTS, ABSOLUTE_ZERO
 
 
 def get_unit_group(unit: str) -> str:
@@ -32,12 +32,12 @@ def convert(value: float, from_unit: str, to_unit: str) -> float:
 
     # КОНВЕРТИУРЕМ ГРУППЫ
     if group_from == 'length':
-        value_from = LENGTH_FACTORS[from_unit] * value
-        value_to = value_from / LENGTH_FACTORS[to_unit]
+        value_from = LENGTH_CONSTS[from_unit] * value # ПЕРЕВОДИМ В МЕТРЫ
+        value_to = value_from / LENGTH_CONSTS[to_unit]
         return value_to
     elif group_from == 'mass':
-        value_from = MASS_FACTORS[from_unit] * value
-        value_to = value_from / MASS_FACTORS[to_unit]
+        value_from = MASS_CONSTS[from_unit] * value # ПЕРЕВОДИМ В ГРАММЫ
+        value_to = value_from / MASS_CONSTS[to_unit]
         return value_to
     elif group_from == 'temperature':
         if value < ABSOLUTE_ZERO[from_unit]:

@@ -4,7 +4,6 @@ def tokenize(expression: str) -> list[str]:
     tokens = []
     operation = "-+*/()"
     numbers = ""
-
     while i < len(expression):  # ЦИКЛ ДЛЯ ЗАПИСИ ТОКЕНОВ
         if expression[i].isspace():  # ПРОВЕРКА НА ПРОБЕЛЫ
             i += 1
@@ -17,7 +16,7 @@ def tokenize(expression: str) -> list[str]:
 
         """ЕСЛИ ПОСЛЕ ЦИКЛА ФЛАГ НЕ ПУСТОЙ, ТО ДОБАВЛЯЕМ ЕГО В ТОКЕН И ЗАНУЛЯЕМ ЕГО"""
         if numbers != "":
-            tokens.append(numbers)
+            tokens.append(("NUMS", numbers))
             numbers = ""
 
         """ПРОВЕРКА НА ПОЯВИВШИЙСЯ ИЗ-ЗА СДВИГОВ i ПРОБЕЛ"""
@@ -29,7 +28,7 @@ def tokenize(expression: str) -> list[str]:
         """ПРОВЕРКА НА ОПЕРАЦИЮ"""
         if i < len(expression):  # ПРОВЕРЯЕМ, НАХОДИТСЯ ЛИ i ЕЩЕ В ВНУТРИ СТРОКИ
             if expression[i] in operation:
-                tokens.append(expression[i])
+                tokens.append(("OPERATION", expression[i]))
             else:
                 raise ValueError(f"Ошибка: недопустимый символ '{expression[i]}'")# ВЫВОДИМ ОШИБКУ, ЕСЛИ ТАКОГО СИМВОЛА НЕ МОЖЕТ БЫТЬ
             i += 1   
@@ -38,7 +37,7 @@ def tokenize(expression: str) -> list[str]:
 def validate(tokens: list[str]) -> None:
     """ПРОВЕРЯЕМ ВОЗМОЖНОСТЬ СУЩЕСТВОВАНИЯ ТАКОГО ВЫРАЖЕНИЯ"""
     i = 0
-    found_number = True
+    found_number = False
     operations_unary = "-+"
     operations = "*/"
     error = ""
@@ -48,44 +47,46 @@ def validate(tokens: list[str]) -> None:
         error ="пустое выражение"
     
     while i < len(tokens):
-        # РЕПЛЕЙСИМ ТОЧКУ ОДИН РАЗ НА ПУСТОТУ, ЧТОБЫ В СЛУЧАЕ ЛИШНИЙ ТОЧКИ КОД НЕ ПРОШЕЛ ПРОВЕРКУ
-        if tokens[i].replace(".", "", 1).isdigit():
+        if tokens[i][0] == "NUMS":
+            # РЕПЛЕЙСИМ ТОЧКУ ОДИН РАЗ НА ПУСТОТУ, ЧТОБЫ В СЛУЧАЕ ЛИШНИЙ ТОЧКИ КОД НЕ ПРОШЕЛ ПРОВЕРКУ
+            if tokens[i][1].replace(".", "", 1).isdigit():
+                if not found_number:
+                    found_number = True
+                    i += 1
+                    continue
+                else:
+                    error = "пропущенный оператор"
+                    break
+            
+        #ПРОВЕРКА НА УНАРНЫЙ ОПЕРАТОР   
+        if tokens[i][0] == "OPERATION" and tokens[i][1] in operations_unary:
             if found_number:
                 found_number = False
                 i += 1
                 continue
             else:
-                error = "пропущенный оператор"
-                break
-
-
-        if tokens[i] in operations_unary:
-            if not found_number:
-                found_number = True
-                i += 1
-                continue
-            else:
                 i += 1
                 continue
 
-        if tokens[i] in operations:
-            if not found_number:
-                found_number = True
+        if tokens[i][0] == "OPERATION" and tokens[i][1] in operations:
+            if found_number:
+                found_number = False
                 i += 1
                 continue
             else:
                 error = "два бинарных оператора подряд"
                 break
 
-        if tokens[i] == '(':
+        if tokens[i][0] == "OPERATION" and tokens[i][1] == '(':
             #ПРОВЕРКА НА НАЛИЧИЕ ОПЕРАТОРА ПЕРЕД СКОБКОЙ
-            if found_number == False:
+            if found_number:
                 error = "пропущенный оператор"
                 break
+
             brackets += 1
             i += 1
 
-        elif tokens[i] == ')':
+        elif tokens[i][0] == "OPERATION" and tokens[i][1] == ')':
             brackets -= 1
             i += 1
             # ПРОВЕРКА НА КОЛИЧЕСТВО СКОБОК
@@ -94,7 +95,7 @@ def validate(tokens: list[str]) -> None:
                 break
 
 
-    if error == "" and found_number :
+    if error == "" and not found_number:
         error = "пропущенный операнд"
 
     if brackets != 0:
@@ -125,30 +126,30 @@ def calculate(tokens: list[str]) -> float:
     brackets = 0
     """ПРОВЕРЯЕМ ДЛЯ ПОВТОРНЫХ КАЛКУЛТОРОВ, ЧТО ОСТАЛОСЬ ТОЛЬКО ЧИСЛО В СРЕЗЕ"""
     if len(tokens) == 1:
-        return float(tokens[0])
+        return float(tokens[0][1])
 
-    if len(tokens) == 2 and tokens[0] in "+-":
+    if len(tokens) == 2 and tokens[0][1] in "+-":
         result = calculate(tokens[1:])
-        if tokens[0] == '-':
+        if tokens[0][1] == '-':
             return -result
         return result
 
-    for i in range(right, left, -1):#ИДЕМ ПО ЦИКЛУ СПРАВА НАЛЕВО
+    for i in range(right, left, -1):#ИДЕМ ПО ЦИКЛУ СПРАВА НАЛЕВО (МНЕ ТАК УДОБНЕЙ ДЛЯ ВОСПРИЯТЬ ЗАПОМИНАТЬ УНАРНЫЙ ОПЕРАТОР -> БИНАРНЫЙ)
         unary = False
 
         #ПРОВЕРКА НА СКОБКУ
-        if tokens[i] == ')':
+        if tokens[i][1] == ')':
             brackets += 1
             continue
         
-        if tokens[i] == '(':
+        if tokens[i][1] == '(':
             brackets -= 1
             continue
 
 
         """ПРОВЕРКА НА УНАРНЫЕ ОПЕРАЦИИ"""
-        if tokens[i] == '+' or tokens[i] == '-':
-            if i == 0 or tokens[ i - 1] in "+-/*":
+        if tokens[i][1] == '+' or tokens[i][1] == '-':
+            if i == 0 or tokens[ i - 1][1] in "+-/*":
                 unary = True
             else:
                 unary = False
@@ -156,7 +157,7 @@ def calculate(tokens: list[str]) -> float:
             continue
 
         if brackets == 0:
-            operate = get_priority(tokens[i])
+            operate = get_priority(tokens[i][1])
         
             if (operate != -1 and operate < operation_priority):
                 """БЕРЕМ ПРИОРИТЕТ ОТ ЛЮБОГО СИМВОЛА. ЕСЛИ ЧИСЛО, ТО -1 НЕ ПРОХОДИТ ТЕСТ. ЕСЛИ ОПЕРАТОР, ПОЛУЧАЕМ ЧИСЛО И ЗАПИСЫВАЕМ ЕГО ПОЗИЦИЮ"""
@@ -173,7 +174,7 @@ def calculate(tokens: list[str]) -> float:
     """ПОВТОРЯЕМ КАЛЬКУЛЕЙТ ДЛЯ СРЕЗОВ"""
     left_result = calculate(left_tokens)
     right_result = calculate(right_tokens)
-    return apply_operation(left_result, tokens[operation_position], right_result)
+    return apply_operation(left_result, tokens[operation_position][1], right_result)
 
 def apply_operation(left: float, operation: str, right: float) -> float:
     """СЧИТАЕМ ДВА ЧИСЛА И ВОЗВРАЩАЕМ РЕЗУЛЬТАТ"""
