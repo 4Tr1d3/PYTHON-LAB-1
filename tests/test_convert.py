@@ -14,24 +14,24 @@ def test_kg_to_g():
     assert convert(3, "kg", "g") == 3000.0
 
 
-def test_celsius_to_fahrenheit():
+def test_c_to_f():
     assert convert(100, "c", "f") == 212.0
 
 
-def test_case_insensitive():
+def test_regist():
     assert convert(1, "KM", "m") == 1000.0
 
 
-def test_incompatible_units():
+def test_wrong_unit_1():
     with pytest.raises(ValueError):
         convert(10, "km", "kg")
 
 
-def test_unknown_unit():
+def test_wrong_unit_2():
     with pytest.raises(ValueError):
         convert(10, "abc", "m")
 
 
-def test_below_absolute_zero():
+def test_absolute_zero():
     with pytest.raises(ValueError):
         convert(-300, "c", "f")

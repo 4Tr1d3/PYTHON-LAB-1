@@ -44,7 +44,7 @@ def validate(tokens: list[str]) -> None:
     brackets = 0
 
     if len(tokens) == 0:
-        error ="пустое выражение"
+        error = "пустое выражение"
     
     while i < len(tokens):
         if tokens[i][0] == "NUMS":
