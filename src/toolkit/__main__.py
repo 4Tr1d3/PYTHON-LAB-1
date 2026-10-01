@@ -1,10 +1,14 @@
-import argparse  # ДОБАВЛЯЕМ БИБЛИОТЕКУ, КОТОРАЯ СЧИТЫВАЕТ CLI
+import argparse
 import sys
-from .calculator import tokenize, validate, calculate#ИМПОРТИРУЕМ КАЛЬКУЛЯТОР И ДОП.ФУНКЦИИ К НЕЙ
-from .converter import convert#ИМПОРТИРУЕМ КОНВЕРТЕР
+from decimal import Decimal, InvalidOperation
+
+from .calculator import calculate, tokenize, validate
+from .converter import convert
+from .errors import CalculatorError, ConverterError, ToolkitError
+from .formatting_decimal import improvement_output
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description = "Консольный набор утилит: калькулятор и конвертер единиц.",
         epilog = """Примеры:
@@ -21,13 +25,15 @@ def main() -> None:
     Для подробной информации:
     python -m toolkit calc --help
     python -m toolkit convert --help""",
-    formatter_class = argparse.RawDescriptionHelpFormatter)# ПОЗВОЛЯЕТ СОХРАНИТЬ ФОРМАТИРОВАНИЕ ОПИСАНИЯ  
+    formatter_class = argparse.RawDescriptionHelpFormatter)
+    #  formatter_class - ПОЗВОЛЯЕТ СОХРАНИТЬ ФОРМАТИРОВАНИЕ ОПИСАНИЯ  
     # ПУСТОЙ ОБЪЕКТ ДЛЯ ЗАПИСИ CLI
 
     # СОЗДАЕМ ПОДКОМАНДЫ(МОЖЕМ ПРИНИМАТЬ БОЛЬШЕ ОДНОГО ЗНАЧЕНИЯ ИЗ CLI)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    calc_parser = subparsers.add_parser("calc", help = 'Вычисление математического выражения',
+    calc_parser = subparsers.add_parser("calc",
+    help = 'Вычисление математического выражения',
     description = "Вычисляет математическое выражение.",
     epilog = """Поддерживаются:
     +  -  *  /
@@ -39,8 +45,9 @@ def main() -> None:
     python -m toolkit calc "2 + 3 * 4"
     python -m toolkit calc "(10 - 2) / 4"
     python -m toolkit calc "-5 + 8" """,
-    formatter_class = argparse.RawDescriptionHelpFormatter)  # СОЗДАЕМ КОМАНДУ CALC
-    calc_parser.add_argument("expression")  # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI
+    formatter_class = argparse.RawDescriptionHelpFormatter) # СОЗДАЕМ КОМАНДУ CALC
+    calc_parser.add_argument("expression", nargs="?")
+    # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI
 
 
     convert_parser = subparsers.add_parser("convert",
@@ -61,29 +68,34 @@ def main() -> None:
     python -m toolkit convert 100 --from cm --to m
     python -m toolkit convert 2 --from km --to m
     python -m toolkit convert 100 --from c --to f""",
-    formatter_class = argparse.RawDescriptionHelpFormatter)  # СОЗДАЕМ КОМАНДУ CONVERT
+    formatter_class = argparse.RawDescriptionHelpFormatter) # СОЗДАЕМ КОМАНДУ CONVERT
 
-    convert_parser.add_argument("value")  # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI
-    # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI, dest(КАКОЕ ИМЯ ДАТЬ ПЕРЕМЕННОЙ ПОЛУЧЕННОЙ ПОСЛЕ ФЛАГА),required(ТРУ = ОБЯЗАТЕЛЬНО ДОЛЖНО БЫТЬ ЗНАЧЕНИЕ )
+    convert_parser.add_argument("value") # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI
+    # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI, dest(КАКОЕ ИМЯ ДАТЬ ПЕРЕМЕННОЙ ПОЛУЧЕННОЙ ПОСЛЕ ФЛАГА)
+    # required(ТРУ = ОБЯЗАТЕЛЬНО ДОЛЖНО БЫТЬ ЗНАЧЕНИЕ )
     convert_parser.add_argument("--from", dest = "from_unit", required = True)
-    convert_parser.add_argument("--to", dest = "to_unit",required = True)  # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI
+    convert_parser.add_argument("--to", dest = "to_unit",required = True)
+    # ПОЛУЧАЕМ АРГУМЕНТ ИЗ CLI
 
-    args = parser.parse_args()  # СОХРАНЯЕМ ЗНАЧЕНИЯ, ПОЛУЧЕННЫЕ ИЗ CLI
+    args = parser.parse_args() # СОХРАНЯЕМ ЗНАЧЕНИЯ, ПОЛУЧЕННЫЕ ИЗ CLI
     try:
-        if args.command == 'calc':#ЗАПУСКАЕМ КАЛЬКУЛЯТОР
+        if args.command == 'calc': # ЗАПУСКАЕМ КАЛЬКУЛЯТОР
+            if args.expression is None or args.expression.strip() == "":
+                raise CalculatorError("Ошибка: Пустое выражение")
             tokens = tokenize(args.expression)
             validate(tokens)
             result = calculate(tokens)
-            print(result)
-        elif args.command == 'convert':#ЗАПУСКАЕМ КОНВЕРТЕР
+            print(improvement_output(result))
+        elif args.command == 'convert': # ЗАПУСКАЕМ КОНВЕРТЕР
             try:
-                value = float(args.value)
-            except ValueError:
-                raise ValueError("Ошибка: значение должно быть числом")
+                value = Decimal(args.value)
+            except InvalidOperation:
+                raise ConverterError("Ошибка: Значение должно быть числом")
             result = convert(value, args.from_unit, args.to_unit)
-            print(result)
-    except ValueError as error:
+            print(improvement_output(result))
+    except ToolkitError as error:
         print(error, file = sys.stderr) # ПОЗВОЛЯЕТ ВЫВЕСТИ РЕЗУЛЬТАТ В ПОТОК ОШИБОК
-        sys.exit(2)
+        return 2
+    return 0
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

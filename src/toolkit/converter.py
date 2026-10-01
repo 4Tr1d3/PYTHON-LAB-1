@@ -1,4 +1,7 @@
-from .constants import LENGTH_CONSTS, MASS_CONSTS, ABSOLUTE_ZERO
+from decimal import Decimal
+
+from .constants import ABSOLUTE_ZERO, LENGTH_CONSTS, MASS_CONSTS
+from .errors import ConverterError
 
 
 def get_unit_group(unit: str) -> str:
@@ -13,10 +16,10 @@ def get_unit_group(unit: str) -> str:
     elif unit in temperature:
         return 'temperature'
     else:
-        raise ValueError('Ошибка: нету такой единицы измерения')
+        raise ConverterError('Ошибка: Нету такой единицы измерения')
 
 
-def convert(value: float, from_unit: str, to_unit: str) -> float:
+def convert(value: Decimal, from_unit: str, to_unit: str) -> Decimal:
     """САМ КОНВЕРТЕР"""
     from_unit = from_unit.lower()  # ПРИВОДИМ К НИЖНЕМУ РЕГИСТРУ
     to_unit = to_unit.lower()  # ПРИВОДИМ К НИЖНЕМУ РЕГИСТРУ
@@ -28,7 +31,7 @@ def convert(value: float, from_unit: str, to_unit: str) -> float:
 
     # ОШИБКА НЕСОВМЕСТИМЫХ ГРУПП
     if group_from != group_to:
-        raise ValueError('Ошибка: несовмистимые единицы измерения')
+        raise ConverterError('Ошибка: Несовместимые единицы измерения')
 
     # КОНВЕРТИУРЕМ ГРУППЫ
     if group_from == 'length':
@@ -41,7 +44,9 @@ def convert(value: float, from_unit: str, to_unit: str) -> float:
         return value_to
     elif group_from == 'temperature':
         if value < ABSOLUTE_ZERO[from_unit]:
-            raise ValueError('Ошибка: температура не может быть ниже абсолютного нуля')
+            raise ConverterError(
+                'Ошибка: Температура не может быть ниже абсолютного нуля'
+            )
 
         """ПЕРЕВОДИМ ВСЕ ЗНАЧЕНИЯ К C"""
         if from_unit == 'c':
@@ -49,7 +54,7 @@ def convert(value: float, from_unit: str, to_unit: str) -> float:
         elif from_unit == 'f':
             value_c = (value - 32) * 5 / 9
         elif from_unit == 'k':
-            value_c = value - 273.15
+            value_c = value - Decimal("273.15")
 
         """ПЕРЕВОДИМ ИЗ C В ОТВЕТ"""
         if to_unit == 'c':
@@ -57,4 +62,4 @@ def convert(value: float, from_unit: str, to_unit: str) -> float:
         elif to_unit == 'f':
             return value_c * 9 / 5 + 32
         elif to_unit == 'k':
-            return value_c + 273.15
+            return value_c + Decimal("273.15")

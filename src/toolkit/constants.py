@@ -1,17 +1,19 @@
+from decimal import Decimal
+
 ABSOLUTE_ZERO = {
-    'c': -273.15,
-    'f': -459.67,
-    'k': 0.0,
+    'c': Decimal("-273.15"),
+    'f': Decimal("-459.67"),
+    'k': Decimal("0"),
 }
 
 LENGTH_CONSTS = {
-    'mm':0.001,
-    'cm':0.01,
-    'm':1.0,
-    'km':1000.0,
+    'mm': Decimal("0.001"),
+    'cm': Decimal("0.01"),
+    'm': Decimal("1"),
+    'km': Decimal("1000"),
 }
 
 MASS_CONSTS = {
-    'g': 1.0,
-    'kg': 1000.0,
+    'g': Decimal("1"),
+    'kg': Decimal("1000"),
 }

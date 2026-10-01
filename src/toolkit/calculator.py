@@ -1,4 +1,9 @@
-def tokenize(expression: str) -> list[str]:
+from decimal import Decimal
+
+from .errors import CalculatorError
+
+
+def tokenize(expression: str) -> list[tuple[str, str]]:
     """РАЗБИВАЕМ ВЫРАЖЕНИЕ НА ТОКЕНЫ"""
     i = 0
     tokens = []
@@ -30,11 +35,12 @@ def tokenize(expression: str) -> list[str]:
             if expression[i] in operation:
                 tokens.append(("OPERATION", expression[i]))
             else:
-                raise ValueError(f"Ошибка: недопустимый символ '{expression[i]}'")# ВЫВОДИМ ОШИБКУ, ЕСЛИ ТАКОГО СИМВОЛА НЕ МОЖЕТ БЫТЬ
+                raise CalculatorError(f"Ошибка: Недопустимый символ '{expression[i]}'")
+            # ВЫВОДИМ ОШИБКУ, ЕСЛИ ТАКОГО СИМВОЛА НЕ МОЖЕТ БЫТЬ
             i += 1   
     return tokens
 
-def validate(tokens: list[str]) -> None:
+def validate(tokens: list[tuple[str, str]]) -> None:
     """ПРОВЕРЯЕМ ВОЗМОЖНОСТЬ СУЩЕСТВОВАНИЯ ТАКОГО ВЫРАЖЕНИЯ"""
     i = 0
     found_number = False
@@ -44,18 +50,18 @@ def validate(tokens: list[str]) -> None:
     brackets = 0
 
     if len(tokens) == 0:
-        error = "пустое выражение"
+        error = "Пустое выражение"
     
     while i < len(tokens):
         if tokens[i][0] == "NUMS":
-            # РЕПЛЕЙСИМ ТОЧКУ ОДИН РАЗ НА ПУСТОТУ, ЧТОБЫ В СЛУЧАЕ ЛИШНИЙ ТОЧКИ КОД НЕ ПРОШЕЛ ПРОВЕРКУ
+#РЕПЛЕЙСИМ ТОЧКУ ОДИН РАЗ НА ПУСТОТУ, И В СЛУЧАЕ ЛИШНЕЙ ТОЧКИ КОД НЕ ПРОШЕЛ ПРОВЕРКУ
             if tokens[i][1].replace(".", "", 1).isdigit():
                 if not found_number:
                     found_number = True
                     i += 1
                     continue
                 else:
-                    error = "пропущенный оператор"
+                    error = "Пропущенный оператор"
                     break
             
         #ПРОВЕРКА НА УНАРНЫЙ ОПЕРАТОР   
@@ -74,13 +80,13 @@ def validate(tokens: list[str]) -> None:
                 i += 1
                 continue
             else:
-                error = "два бинарных оператора подряд"
+                error = "Два бинарных оператора подряд"
                 break
 
         if tokens[i][0] == "OPERATION" and tokens[i][1] == '(':
             #ПРОВЕРКА НА НАЛИЧИЕ ОПЕРАТОРА ПЕРЕД СКОБКОЙ
             if found_number:
-                error = "пропущенный оператор"
+                error = "Пропущенный оператор"
                 break
 
             brackets += 1
@@ -91,17 +97,17 @@ def validate(tokens: list[str]) -> None:
             i += 1
             # ПРОВЕРКА НА КОЛИЧЕСТВО СКОБОК
             if brackets < 0:
-                error = "лишняя закрывающая скобка"
+                error = "Лишняя закрывающая скобка"
                 break
 
 
     if error == "" and not found_number:
-        error = "пропущенный операнд"
+        error = "Пропущенный операнд"
 
     if brackets != 0:
-        raise ValueError(f"Ошибка: Незакрытая скобка")
+        raise CalculatorError("Ошибка: Незакрытая скобка")
     if error:
-        raise ValueError(f"Ошибка: {error}")
+        raise CalculatorError(f"Ошибка: {error}")
 
 def get_priority(operate: str) -> int:
     """ВЫВОДИТ ПРИОРИТЕТ ФУНКЦИИ ОТ ВВЕДЕННОЙ ОПЕРАЦИИ"""
@@ -115,8 +121,8 @@ def get_priority(operate: str) -> int:
         return 2
     return -1
 
-def calculate(tokens: list[str]) -> float:
-    """САМ КАЛЬКУЛЯТОР, КОТОРЫЙ РАССТАВЛЯЕТ ПРИОРИТЕТЫ И РАЗБИВАЕТ ВЫРАЖЕНИЕ НА ЧАСТИ, КОТОРЫЙ СЧИТАЮТСЯ ОТДЕЛЬНОЙ Ф-ЦИЕЙ"""
+def calculate(tokens: list[tuple[str, str]]) -> Decimal:
+    """РАСТАВЛЯЕМ ПРИОРИТЕТЫ И ДЕЛИМ ВЫРАЖЕНИЕ НА ЧАСТИ, СЧИТАЕМЫЕ ДРУГОЙ Ф-ЦИЕЙ"""
     left = -1 # ЛЕВАЯ ГРАНИЦА ДЛЯ РАЗДЕЛЕНИЯ ПО ПРИОРИТЕТАМ
     right = len(tokens) - 1 # ПРАВАЯ ГРАНИЦА ДЛЯ РАЗДЕЛЕНИЯ ПО ПРИОРИТЕТАМ
 
@@ -126,7 +132,7 @@ def calculate(tokens: list[str]) -> float:
     brackets = 0
     """ПРОВЕРЯЕМ ДЛЯ ПОВТОРНЫХ КАЛКУЛТОРОВ, ЧТО ОСТАЛОСЬ ТОЛЬКО ЧИСЛО В СРЕЗЕ"""
     if len(tokens) == 1:
-        return float(tokens[0][1])
+        return Decimal(tokens[0][1])
 
     if len(tokens) == 2 and tokens[0][1] in "+-":
         result = calculate(tokens[1:])
@@ -134,7 +140,8 @@ def calculate(tokens: list[str]) -> float:
             return -result
         return result
 
-    for i in range(right, left, -1):#ИДЕМ ПО ЦИКЛУ СПРАВА НАЛЕВО (МНЕ ТАК УДОБНЕЙ ДЛЯ ВОСПРИЯТЬ ЗАПОМИНАТЬ УНАРНЫЙ ОПЕРАТОР -> БИНАРНЫЙ)
+    for i in range(right, left, -1):
+    # ИДЕМ ПО ЦИКЛУ СПРАВА НАЛЕВО (УДОБНЕЙ ДЛЯ ВОСПРИЯТИЯ УНАРНЫЙ ОПЕРАТОР -> БИНАРНЫЙ)
         unary = False
 
         #ПРОВЕРКА НА СКОБКУ
@@ -160,7 +167,7 @@ def calculate(tokens: list[str]) -> float:
             operate = get_priority(tokens[i][1])
         
             if (operate != -1 and operate < operation_priority):
-                """БЕРЕМ ПРИОРИТЕТ ОТ ЛЮБОГО СИМВОЛА. ЕСЛИ ЧИСЛО, ТО -1 НЕ ПРОХОДИТ ТЕСТ. ЕСЛИ ОПЕРАТОР, ПОЛУЧАЕМ ЧИСЛО И ЗАПИСЫВАЕМ ЕГО ПОЗИЦИЮ"""
+                """БЕРЕМ ПРИОРИТЕТ ОТ ЛЮБОГО СИМВОЛА.ЕСЛИ int -> -1.ЕСЛИ +-*/ -> 1,2"""
                 operation_position = i
                 operation_priority = operate
 
@@ -176,7 +183,7 @@ def calculate(tokens: list[str]) -> float:
     right_result = calculate(right_tokens)
     return apply_operation(left_result, tokens[operation_position][1], right_result)
 
-def apply_operation(left: float, operation: str, right: float) -> float:
+def apply_operation(left: Decimal, operation: str, right: Decimal) -> Decimal:
     """СЧИТАЕМ ДВА ЧИСЛА И ВОЗВРАЩАЕМ РЕЗУЛЬТАТ"""
     if operation == '+':
         return left + right
@@ -188,4 +195,4 @@ def apply_operation(left: float, operation: str, right: float) -> float:
         if right != 0:
             return left / right
         else:
-            raise ValueError("Ошибка: Нельзя делить на ноль")
+            raise CalculatorError("Ошибка: Нельзя делить на ноль")

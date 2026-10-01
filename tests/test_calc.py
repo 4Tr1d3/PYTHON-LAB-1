@@ -1,5 +1,7 @@
 import pytest
-from src.toolkit.calculator import tokenize, validate, calculate
+
+from src.toolkit.calculator import calculate, tokenize, validate
+from src.toolkit.errors import CalculatorError
 
 
 def test_plus():
@@ -55,18 +57,18 @@ def test_division_by_zero():
     tokens = tokenize("10/0")
     validate(tokens)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(CalculatorError):
         calculate(tokens)
 
 
 def test_two_operators():
     tokens = tokenize("2*/3")
 
-    with pytest.raises(ValueError): # ОЖИДАЕМ ОШИБКУ 
+    with pytest.raises(CalculatorError): # ОЖИДАЕМ ОШИБКУ 
         validate(tokens)
 
 
 def test_wrong_symbol():
-    with pytest.raises(ValueError):
+    with pytest.raises(CalculatorError):
         tokenize("2&3")
         
